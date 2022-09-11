@@ -18,6 +18,16 @@ import matplotlib.pyplot as plt
 from sklearn import datasets, svm, metrics
 from sklearn.model_selection import train_test_split
 
+import warnings
+warnings.filterwarnings('ignore')
+
+gamma_list = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]
+c_list = [0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]
+
+train_frac = 0.8
+test_frac = 0.1
+dev_frac = 0.1
+
 ###############################################################################
 # Digits dataset
 # --------------
@@ -59,13 +69,53 @@ for ax, image, label in zip(axes, digits.images, digits.target):
 n_samples = len(digits.images)
 data = digits.images.reshape((n_samples, -1))
 
-# Create a classifier: a support vector classifier
-clf = svm.SVC(gamma=0.001)
-
 # Split data into 50% train and 50% test subsets
-X_train, X_test, y_train, y_test = train_test_split(
-    data, digits.target, test_size=0.5, shuffle=False
+dev_test_frac = 1-train_frac
+X_train, X_dev_test, y_train, y_dev_test = train_test_split(
+    data, digits.target, test_size=dev_test_frac, shuffle=True, random_state=1
 )
+X_test, X_dev, y_test, y_dev = train_test_split(
+    X_dev_test, y_dev_test, test_size=(dev_frac)/dev_test_frac, shuffle=True, random_state=1
+)
+
+##############################################################################
+# Hyperparameter search
+def hyperparam_search(gamma_list, c_list):
+    acc_list = []
+    for g in gamma_list:
+        for c in c_list:
+            h_params = {
+                'gamma': g,
+                'C': c
+            }
+            clf_ = svm.SVC()
+            clf_.set_params(**h_params)
+            clf_.fit(X_train, y_train)
+            predicted = clf_.predict(X_test)
+            result = {
+                    'accuracy': metrics.classification_report(y_test, predicted, output_dict=True)['accuracy'],
+                    'gamma': g,
+                    'c': c
+                }
+            print(result)
+            acc_list.append(
+                result
+            )
+    best_hyper_param = max(acc_list, key=lambda x: x['accuracy'])
+    return best_hyper_param
+
+best_params = hyperparam_search(gamma_list, c_list)
+
+print("Best Params:\n",best_params)
+
+GAMMA = best_params['gamma']
+C = best_params['c']
+
+# Create a classifier: a support vector classifier
+clf = svm.SVC()
+
+hyper_params = {'gamma':GAMMA, 'C':C}
+clf.set_params(**hyper_params)
 
 # Learn the digits on the train subset
 clf.fit(X_train, y_train)
