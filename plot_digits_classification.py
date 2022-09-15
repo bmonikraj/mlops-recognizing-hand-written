@@ -17,6 +17,19 @@ import matplotlib.pyplot as plt
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets, svm, metrics
 from sklearn.model_selection import train_test_split
+from skimage.transform import resize
+import pandas as pd
+import numpy as np
+
+import warnings
+warnings.filterwarnings('ignore')
+
+gamma_list = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]
+c_list = [0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]
+
+train_frac = 0.8
+test_frac = 0.1
+dev_frac = 0.1
 
 ###############################################################################
 # Digits dataset
@@ -55,17 +68,74 @@ for ax, image, label in zip(axes, digits.images, digits.target):
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
 
+#############################################################################
+# Resize of image
+r_images = []
+for i in range(len(digits.images)):
+    r_images.append(resize(digits.images[i], (32,32), anti_aliasing=True))
+digits.images = np.array(r_images)
+
 # flatten the images
 n_samples = len(digits.images)
+print(f"Image shape resized : {digits.images[0].shape}")
 data = digits.images.reshape((n_samples, -1))
 
-# Create a classifier: a support vector classifier
-clf = svm.SVC(gamma=0.001)
-
 # Split data into 50% train and 50% test subsets
-X_train, X_test, y_train, y_test = train_test_split(
-    data, digits.target, test_size=0.5, shuffle=False
+dev_test_frac = 1-train_frac
+X_train, X_dev_test, y_train, y_dev_test = train_test_split(
+    data, digits.target, test_size=dev_test_frac, shuffle=True, random_state=1
 )
+X_test, X_dev, y_test, y_dev = train_test_split(
+    X_dev_test, y_dev_test, test_size=(dev_frac)/dev_test_frac, shuffle=True, random_state=1
+)
+
+##############################################################################
+# Hyperparameter search
+def hyperparam_search(gamma_list, c_list):
+    hyperparam_search = []
+    acc_list = []
+    for g in gamma_list:
+        for c in c_list:
+            h_params = {
+                'gamma': g,
+                'C': c
+            }
+            clf_ = svm.SVC()
+            clf_.set_params(**h_params)
+            clf_.fit(X_train, y_train)
+            predicted = clf_.predict(X_test)
+            result = {
+                    'accuracy': metrics.classification_report(y_test, predicted, output_dict=True)['accuracy'],
+                    'gamma': g,
+                    'c': c
+                }
+            hyperparam_search.append(
+                {
+                    "params": h_params,
+                    "train_acc": metrics.classification_report(y_train, clf_.predict(X_train), output_dict=True)['accuracy'],
+                    "test_acc": metrics.classification_report(y_test, clf_.predict(X_test), output_dict=True)['accuracy'],
+                    "dev_acc": metrics.classification_report(y_dev, clf_.predict(X_dev), output_dict=True)['accuracy']
+                }
+            )
+            acc_list.append(
+                result
+            )
+    best_hyper_param = max(acc_list, key=lambda x: x['accuracy'])
+    print(pd.DataFrame(hyperparam_search))
+    return best_hyper_param
+
+best_params = hyperparam_search(gamma_list, c_list)
+
+print("Best Params:\n",best_params)
+
+GAMMA = best_params['gamma']
+C = best_params['c']
+
+# Create a classifier: a support vector classifier
+clf = svm.SVC()
+
+hyper_params = {'gamma':GAMMA, 'C':C}
+clf.set_params(**hyper_params)
 
 # Learn the digits on the train subset
 clf.fit(X_train, y_train)
@@ -77,12 +147,12 @@ predicted = clf.predict(X_test)
 # Below we visualize the first 4 test samples and show their predicted
 # digit value in the title.
 
-_, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
-for ax, image, prediction in zip(axes, X_test, predicted):
-    ax.set_axis_off()
-    image = image.reshape(8, 8)
-    ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
-    ax.set_title(f"Prediction: {prediction}")
+# _, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
+# for ax, image, prediction in zip(axes, X_test, predicted):
+#     ax.set_axis_off()
+#     image = image.reshape(8, 8)
+#     ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
+#     ax.set_title(f"Prediction: {prediction}")
 
 ###############################################################################
 # :func:`~sklearn.metrics.classification_report` builds a text report showing
@@ -97,8 +167,8 @@ print(
 # We can also plot a :ref:`confusion matrix <confusion_matrix>` of the
 # true digit values and the predicted digit values.
 
-disp = metrics.ConfusionMatrixDisplay.from_predictions(y_test, predicted)
-disp.figure_.suptitle("Confusion Matrix")
-print(f"Confusion matrix:\n{disp.confusion_matrix}")
+# disp = metrics.ConfusionMatrixDisplay.from_predictions(y_test, predicted)
+# disp.figure_.suptitle("Confusion Matrix")
+# print(f"Confusion matrix:\n{disp.confusion_matrix}")
 
-plt.show()
+# plt.show()
