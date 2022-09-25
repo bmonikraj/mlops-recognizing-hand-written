@@ -8,8 +8,8 @@ from utils import data_viz, preprocess_digits, train_dev_test_split, hyperparam_
 import warnings
 warnings.filterwarnings('ignore')
 
-gamma_list = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]
-c_list = [0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]
+gamma_list = [0.0001, 0.001, 0.01, 0.1]
+c_list = [1, 2, 3, 4, 5]
 
 train_frac = 0.8
 test_frac = 0.1
@@ -74,8 +74,8 @@ best_params = hyperparam_search(gamma_list, c_list, X_train, y_train, X_dev, y_d
 
 print("Best Params:\n",best_params)
 
-GAMMA = best_params['gamma']
-C = best_params['c']
+GAMMA = best_params['dev_acc']['gamma']
+C = best_params['dev_acc']['c']
 
 # Create a classifier: a support vector classifier
 clf = svm.SVC()
@@ -104,10 +104,10 @@ predicted = clf.predict(X_test)
 # :func:`~sklearn.metrics.classification_report` builds a text report showing
 # the main classification metrics.
 
-print(
-    f"Classification report for classifier {clf}:\n"
-    f"{metrics.classification_report(y_test, predicted)}\n"
-)
+# print(
+#     f"Classification report for classifier {clf}:\n"
+#     f"{metrics.classification_report(y_test, predicted)}\n"
+# )
 
 ###############################################################################
 # We can also plot a :ref:`confusion matrix <confusion_matrix>` of the
