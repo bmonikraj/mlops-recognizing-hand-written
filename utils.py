@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from sklearn import datasets, svm, metrics
+from sklearn import svm
 import pandas as pd
+import copy
+from joblib import dump
 
 def preprocess_digits(dataset):
     n_samples = len(dataset.images)
@@ -36,37 +38,53 @@ def train_dev_test_split(data, label, train_frac, dev_frac):
 
     return x_train, y_train, x_dev, y_dev, x_test, y_test
 
-##############################################################################
-# Hyperparameter search
-def hyperparam_search(gamma_list, c_list, X_train, y_train, X_test, y_test, X_dev, y_dev):
-    hyperparam_search = []
-    acc_list = []
-    for g in gamma_list:
-        for c in c_list:
-            h_params = {
-                'gamma': g,
-                'C': c
-            }
-            clf_ = svm.SVC()
-            clf_.set_params(**h_params)
-            clf_.fit(X_train, y_train)
-            predicted = clf_.predict(X_test)
-            result = {
-                    'accuracy': metrics.classification_report(y_test, predicted, output_dict=True)['accuracy'],
-                    'gamma': g,
-                    'c': c
-                }
-            hyperparam_search.append(
-                {
-                    "params": h_params,
-                    "train_acc": metrics.classification_report(y_train, clf_.predict(X_train), output_dict=True)['accuracy'],
-                    "test_acc": metrics.classification_report(y_test, clf_.predict(X_test), output_dict=True)['accuracy'],
-                    "dev_acc": metrics.classification_report(y_dev, clf_.predict(X_dev), output_dict=True)['accuracy']
-                }
-            )
-            acc_list.append(
-                result
-            )
-    best_hyper_param = max(acc_list, key=lambda x: x['accuracy'])
-    print(pd.DataFrame(hyperparam_search))
-    return best_hyper_param
+
+def get_hyperparameters(params):
+    params_combinations = [{"gamma":g, "C":c} for g in params['gamma'] for c in params['C']]
+    return params_combinations
+
+def hyperparam_search(hyper_params, clf, X_train, y_train, X_test, y_test, X_dev, y_dev, metric):
+    best_metric, best_model, best_h_params = -0.1, None, None
+    
+    for param in hyper_params:
+        clf.set_params(**param)
+        clf.fit(X_train, y_train)
+        pre_dev = clf.predict(X_dev)
+        cur_metric = metric(y_pred=pre_dev, y_true=y_dev)
+        if cur_metric > best_metric:
+            best_metric = cur_metric
+            best_model = copy.copy(clf)
+            best_h_params = param
+            print("Found new best with:" + str(param))
+            print("New best val metric:" + str(cur_metric))
+    return best_model, best_metric, best_h_params
+
+def tune_and_save(hyper_params, clf, X_train, y_train, X_test, y_test, X_dev, y_dev, metric, model_path):
+    best_model, best_metric, best_h_params = hyperparam_search(
+        hyper_params,
+        clf,
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        X_dev,
+        y_dev,
+        metric
+    )
+    best_param_config = "_".join(
+        [h + "=" + str(best_h_params[h]) for h in best_h_params]
+    )
+    if type(clf) == svm.SVC:
+        model_type = 'svm'
+    else:
+        model_type = 'none'
+
+    best_model_file = model_type + "_" + best_param_config + ".joblib"
+    if model_path == None:
+        model_path = best_model_file
+    print(best_model)
+    dump(best_model, model_path)
+
+    print(f"Best hyperparameters: {best_h_params}")
+    print(f"Best metric on Dev data: {best_metric}")
+    return model_path
