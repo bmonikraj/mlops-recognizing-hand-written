@@ -132,7 +132,7 @@ model_eval_runs_results["decision_tree"].append(
 )
 
 df_model_runs_eval = pd.DataFrame(model_eval_runs_results)
-print(df_model_runs_eval.to_markdown(tablefmt="grid", index=False))
+print(df_model_runs_eval.to_markdown(index=False))
 
 
 # 
