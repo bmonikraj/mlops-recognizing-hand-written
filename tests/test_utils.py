@@ -14,7 +14,7 @@ def test_get_hyperparameters():
     params = {}
     params["gamma"] = gamma_list
     params["C"] = c_list
-    h_param_comb = get_hyperparameters(params)
+    h_param_comb = get_hyperparameters("svc", params)
 
     assert len(h_param_comb) == len(gamma_list) * len(c_list)
 
@@ -26,7 +26,7 @@ def helper_h_params():
     params = {}
     params["gamma"] = gamma_list
     params["C"] = c_list
-    h_param_comb = get_hyperparameters(params)
+    h_param_comb = get_hyperparameters("svc", params)
     return h_param_comb
 
 def helper_create_bin_data(n=100, d=7):
