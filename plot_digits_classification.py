@@ -152,11 +152,12 @@ best_predicted_svc = best_model_svc.predict(X_test_best_svc)
 best_model_dtree = load('3-dtree.joblib')
 best_predicted_dtree = best_model_dtree.predict(X_test_best_dtree)
 
-pred_image_viz(X_test_best_svc, best_predicted_svc)
-pred_image_viz(X_test_best_dtree, best_predicted_dtree)
+# pred_image_viz(X_test_best_svc, best_predicted_svc)
+# pred_image_viz(X_test_best_dtree, best_predicted_dtree)
 
-confusion_matrix_viz(y_test_best_svc, best_predicted_svc, best_model_svc)
-confusion_matrix_viz(y_test_best_dtree, best_predicted_dtree, best_model_dtree)
+# confusion_matrix_viz(y_test_best_svc, best_predicted_svc, best_model_svc)
+# confusion_matrix_viz(y_test_best_dtree, best_predicted_dtree, best_model_dtree)
 
-# print(f"Classification report for classifier {best_model}:\n")
-# print(f"{metrics.classification_report(y_test, predicted)}\n")
+print("")
+print(f"Classification report for classifier {best_model_svc}:\n")
+print(f"{metrics.classification_report(y_test_best_svc, best_predicted_svc)}\n")
