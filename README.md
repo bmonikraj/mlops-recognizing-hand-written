@@ -11,3 +11,15 @@
 | 5     | 0.988764   |       0.876404  |
 | mean  | 0.98386    |       0.848043  |
 | std   | 0.00329028 |       0.0197942 |
+
+## Flask app run 
+
+`FLASK_APP=api.py flask run`
+
+## Docker 
+
+### Build 
+`docker build -t exp:v1 -f Dockerfile .`
+
+### Run 
+`docker run -it exp:v1`
