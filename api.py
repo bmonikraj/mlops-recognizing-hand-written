@@ -1,6 +1,7 @@
 from flask import Flask
 from flask import request
 from joblib import load
+import numpy as np
 
 app = Flask(__name__)
 model_path = "5-svc.joblib"
@@ -22,6 +23,19 @@ def sum():
 @app.route("/predict", methods=['POST'])
 def predict_digit():
     image = request.json['image']
-    print("done loading")
-    predicted = model.predict([image])
+    predicted = model.predict([
+        np.array(image)
+    ])
     return {"y_predicted":int(predicted[0])}
+
+@app.route("/match", methods=['POST'])
+def match_digits():
+    image_0 = request.json['image_0']
+    image_1 = request.json['image_1']
+    predicted_0 = model.predict([
+        np.array(image_0)
+    ])
+    predicted_1 = model.predict([
+        np.array(image_1)
+    ])
+    return {"macthed": str(predicted_0[0] == predicted_1[0])}
