@@ -47,7 +47,7 @@ def test_tune_and_save():
     metric = metrics.accuracy_score
     
     model_path = "test_run_model_path.joblib"
-    actual_model_path = tune_and_save(h_param_comb, clf, x_train, y_train, x_dev, y_dev, x_dev, y_dev, metric, "./", "./", model_path)
+    actual_model_path = tune_and_save(h_param_comb, clf, x_train, y_train, x_dev, y_dev, x_dev, y_dev, metric, 51, "./", "./", model_path)
 
     assert actual_model_path == model_path
     assert os.path.exists(actual_model_path)
