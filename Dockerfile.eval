@@ -1,4 +1,3 @@
-# FROM ubuntu:latest
 FROM python:3.8.1
 
 COPY ./*.py /exp/
@@ -8,9 +7,7 @@ RUN pip3 install --no-cache-dir -r /exp/requirements.txt
 
 WORKDIR /exp
 
-ENV FLASK_APP="api.py"
+ENV CLF_NAME="svm"
+ENV RANDOM_STATE="15"
 
-EXPOSE 5000
-
-# CMD ["python3", "plot_digits_classification.py"]
-CMD ["flask", "run", "--host", "0.0.0.0"]
+CMD python plot_digits_classification.py --clf_name ${CLF_NAME} --random_state ${RANDOM_STATE}

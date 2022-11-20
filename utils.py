@@ -34,14 +34,14 @@ def confusion_matrix_viz(y_test, predictions, clf):
     disp.plot()
     plt.show()
 
-def train_dev_test_split(data, label, train_frac, dev_frac):
+def train_dev_test_split(data, label, train_frac, dev_frac, random_state_val):
 
     dev_test_frac = 1 - train_frac
     x_train, x_dev_test, y_train, y_dev_test = train_test_split(
-        data, label, test_size=dev_test_frac, shuffle=True, random_state=56
+        data, label, test_size=dev_test_frac, shuffle=True, random_state=random_state_val
     )
     x_test, x_dev, y_test, y_dev = train_test_split(
-        x_dev_test, y_dev_test, test_size=(dev_frac) / dev_test_frac, shuffle=True, random_state=56
+        x_dev_test, y_dev_test, test_size=(dev_frac) / dev_test_frac, shuffle=True, random_state=random_state_val
     )
 
     return x_train, y_train, x_dev, y_dev, x_test, y_test
@@ -60,6 +60,7 @@ def hyperparam_search(hyper_params, clf, X_train, y_train, X_test, y_test, X_dev
     best_metric, best_model, best_h_params = -0.1, None, None
     
     for param in hyper_params:
+        # print(param)
         clf.set_params(**param)
         clf.fit(X_train, y_train)
         pre_dev = clf.predict(X_dev)
@@ -72,7 +73,7 @@ def hyperparam_search(hyper_params, clf, X_train, y_train, X_test, y_test, X_dev
             # print("New best val metric:" + str(cur_metric))
     return best_model, best_metric, best_h_params
 
-def tune_and_save(hyper_params, clf, X_train, y_train, X_test, y_test, X_dev, y_dev, metric, model_path):
+def tune_and_save(hyper_params, clf, X_train, y_train, X_test, y_test, X_dev, y_dev, metric, random_state, model_dir, result_dir, model_path):
     best_model, best_metric, best_h_params = hyperparam_search(
         hyper_params,
         clf,
@@ -82,25 +83,37 @@ def tune_and_save(hyper_params, clf, X_train, y_train, X_test, y_test, X_dev, y_
         y_test,
         X_dev,
         y_dev,
-        metric
+        metric[0]
     )
+    
+    pre_dev = clf.predict(X_dev)
+    macro_f1_metric = metric[1](y_pred=pre_dev, y_true=y_dev, average='macro')
+
     best_param_config = "_".join(
         [h + "=" + str(best_h_params[h]) for h in best_h_params]
     )
     if type(clf) == svm.SVC:
-        model_type = 'svm-svc'
+        model_type = 'svm'
     elif type(clf) == tree.DecisionTreeClassifier:
-        model_type = 'tree-dtc'
+        model_type = 'tree'
     else:
         model_type = 'none'
 
-    best_model_file = model_type + "_" + best_param_config + ".joblib"
+    best_model_file = model_dir + model_type + "_" + best_param_config + ".joblib"
     if model_path == None:
         model_path = best_model_file
     dump(best_model, model_path)
 
-    print(f"Model: {model_type}")
-    print(f"Best hyperparameters: {best_h_params}")
-    print(f"Best metric on Dev data: {best_metric}")
-    print("")
+    # print(f"Model: {model_type}")
+    # print(f"Best hyperparameters: {best_h_params}")
+    # print(f"Best metric on Dev data: {best_metric}")
+    # print("")
+
+    f = open(f"{result_dir}{model_type}_{random_state}.txt", "w")
+    
+    f.write(f"test accuracy: {best_metric}\n")
+    f.write(f"test macro-f1: {macro_f1_metric}\n")
+    f.write(f"model saved at {model_path}")
+    f.close()
+
     return model_path
